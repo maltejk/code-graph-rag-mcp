@@ -45,6 +45,27 @@ or
 
 **Manual setup**: Add to Claude Desktop config → [See detailed instructions](docs/guides/CLAUDE_INTEGRATION.md)
 
+### Claude Code Integration
+
+Claude Code (the CLI, `claude`) enforces a **hardcoded 15-second timeout** on every MCP tool call. When using a hosted embedding provider (OpenAI, Gemini via OpenAI-compat, etc.), the default 50-seed cache warmup can push the first `semantic_search` call past this limit and return `timed out after 15000ms` — even though subsequent calls complete in well under a second.
+
+Recommended setup:
+
+```bash
+claude mcp add code-graph-rag -s user \
+  -e MCP_EMBEDDING_PROVIDER=openai \
+  -e MCP_EMBEDDING_MODEL=gemini-embedding-001 \
+  -e MCP_EMBEDDING_ENABLED=true \
+  -e OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai \
+  -e OPENAI_API_KEY=YOUR_KEY \
+  -e MCP_SEMANTIC_WARMUP_LIMIT=0 \
+  -- code-graph-rag-mcp /path/to/your/codebase
+```
+
+Key flag: `MCP_SEMANTIC_WARMUP_LIMIT=0` disables the cache warmup so the semantic agent initializes in milliseconds, keeping first-query latency inside Claude Code's 15s window. Subsequent queries hit the warm agent and return in <500ms.
+
+Unlike Claude Desktop, Claude Code does not honor a per-server `MCP_TIMEOUT` env var — the 15s limit is enforced client-side with no override available today.
+
 ### Gemini CLI Integration
 ```bash
 # Example
@@ -200,6 +221,9 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
 ---
 
 ## 🧰 **Troubleshooting**
+
+- **Claude Code: `semantic_search timed out after 15000ms` on first call**  
+  Claude Code (the CLI) enforces a hardcoded 15-second timeout on every MCP tool call and does not honor per-server `MCP_TIMEOUT` env vars. The default cache warmup (`cacheWarmupLimit: 50`) issues up to 50 embedding requests during agent init, which can exceed 15s when using a hosted provider (OpenAI, Gemini, etc.). Set `MCP_SEMANTIC_WARMUP_LIMIT=0` in the MCP server env to skip warmup — first query will then complete inside the 15s window, and subsequent queries hit the warm agent and return in under a second. See the Claude Code Integration section above for the full recommended `claude mcp add` command.
 
 - **Codex/VSCode MCP stdio fails to start**  
   Codex is strict about stdio: `stdout` must be JSON-RPC only. As of v2.7.12, console stdout logs are redirected to `stderr` during MCP runs, and heavy initialization is deferred until after handshake / first tool call.  
