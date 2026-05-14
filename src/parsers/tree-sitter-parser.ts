@@ -69,7 +69,7 @@ const LANGUAGE_LOADERS: Partial<Record<SupportedLanguage, () => Promise<any>>> =
     return m.default ?? m;
   },
   csharp: async () => {
-    const m: any = requireModule("tree-sitter-c-sharp");
+    const m: any = await import("tree-sitter-c-sharp");
     return m.default ?? m;
   },
   go: async () => {
