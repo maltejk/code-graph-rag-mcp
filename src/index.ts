@@ -385,13 +385,23 @@ async function ensureRuntimeInitialized(): Promise<void> {
         if (resolved) directory = resolved;
       }
 
+      // Compute absolute database path BEFORE chdir to ensure per-repo isolation
+      const defaultDbRelativePath = "./.code-graph-rag/vectors.db";
+      const absoluteDbPath = resolve(directory, defaultDbRelativePath);
+
       try {
         process.chdir(directory);
       } catch (error) {
         console.error(
           `[Main] Failed to chdir to ${directory}: ${error instanceof Error ? error.message : String(error)}`,
         );
+        console.error("[Main] Cannot continue without valid working directory. Exiting.");
+        process.exit(1);
       }
+
+      // Override database path with absolute path computed from target directory
+      // This ensures each codebase uses its own database regardless of cwd
+      process.env.DATABASE_PATH = absoluteDbPath;
 
       if (overrideConfigPath) {
         ConfigLoader.setOverridePath(overrideConfigPath);
