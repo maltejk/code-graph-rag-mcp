@@ -16,30 +16,38 @@ A powerful [Model Context Protocol](https://github.com/modelcontextprotocol) ser
 ## 🚀 **Quick Start**
 
 ### Installation
-### LATEST VERSION ONLY FROM GitHub Realeases 
-### do not use npm repository  any more 
+
+Download the latest `.tgz` from [GitHub Releases](https://github.com/maltejk/code-graph-rag-mcp/releases):
+
 ```bash
-# Install globally
-npm install -g ./er77-code-graph-rag-mcp-2.7.12.tgz
+npm install -g ./code-graph-rag-mcp-*.tgz
 code-graph-rag-mcp --version
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/maltejk/code-graph-rag-mcp.git
+cd code-graph-rag-mcp
+npm install && npm run build && npm install -g .
 ```
 
 ### Claude Desktop Integration
 ```bash
 # Quick setup (recommended)
 npx @modelcontextprotocol/inspector add code-graph-rag \
-  --command "npx" \
-  --args "@er77/code-graph-rag-mcp /path/to/your/codebase"
+  --command "code-graph-rag-mcp" \
+  --args "/path/to/your/codebase"
 ```
 or
 ```
 #
   claude mcp add-json  code-graph-rag ' { 
-        "command": "npx",
-        "args": ["@er77/code-graph-rag-mcp", "/_work_fodler"],
-  "env": {
-    "MCP_TIMEOUT": "80000"
-  }
+        "command": "code-graph-rag-mcp",
+        "args": [],
+        "env": {
+          "MCP_TIMEOUT": "80000"
+        }
       }
 ```
 
@@ -70,8 +78,8 @@ Unlike Claude Desktop, Claude Code does not honor a per-server `MCP_TIMEOUT` env
 ```bash
 # Example
 gemini mcp add-json code-graph-rag '{
-  "command": "npx",
-  "args": ["@er77/code-graph-rag-mcp", "/path/to/your/codebase"]
+  "command": "code-graph-rag-mcp",
+  "args": ["/path/to/your/codebase"]
 }'
 ```
 
@@ -129,13 +137,6 @@ Unlike Claude Code CLI, OpenCode respects `MCP_TIMEOUT`, so the default embeddin
 
 **Multi-codebase support**: Analyze multiple projects simultaneously → [Multi-Codebase Setup Guide](docs/guides/MULTI_CODEBASE_SETUP.md)
 
-### Installation Guide (All Clients)
-- NPM: `npm install -g @er77/code-graph-rag-mcp`
-- Run server locally: `code-graph-rag-mcp [directory]`
-- Claude: use Inspector (above) or see [Quick Start](#-quick-start)
-- Gemini: configure via `gemini mcp add-json ...` (above)
-- Codex: configure via `codex mcp add ...` (above)
-
 ---
 
 ## 🏆 **Performance**
@@ -192,7 +193,7 @@ Unlike Claude Code CLI, OpenCode respects `MCP_TIMEOUT`, so the default embeddin
 | **C/C++** | Functions, structs/unions/enums, classes, namespaces, templates | ✅ Advanced (90%) |
 | **C#** | Classes, interfaces, enums, properties, LINQ, async/await | ✅ Advanced (90%) |
 | **Rust** | Functions, structs, enums, traits, impls, modules, use | ✅ Advanced (90%) |
-| **Go** | Packages, functions, structs, interfaces, goroutines, channels | ✅ Advanced (90%) |
+| **Go** | Packages, imports, functions, methods, structs, interfaces, fields, goroutines, channels, function calls, struct embedding | ✅ Advanced (95%) |
 | **Java** | Classes, interfaces, enums, records (Java 14+), generics, lambdas | ✅ Advanced (90%) |
 | **Kotlin** | Packages/imports, classes/objects, functions/properties, relationships | ✅ Implemented |
 | **VBA** | Modules, subs, functions, properties, user-defined types | ✅ Regex-based (80%) |
@@ -297,7 +298,7 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
   ```bash
   npm rebuild better-sqlite3
   ```
-  in the installation directory (globally this is commonly `/usr/lib/node_modules/@er77/code-graph-rag-mcp`).
+  in the installation directory (globally this is commonly `/usr/lib/node_modules/code-graph-rag-mcp`).
 
 - **Legacy database missing new columns**  
   Older installations might lack the latest `embeddings` columns (`metadata`, `model_name`, etc.). The server now auto-upgrades in place, but if you still encounter migration errors, delete the local DB and re-run the indexer:
@@ -449,7 +450,7 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
 2. Follow [Agent Governance](docs/AGENTS.md) rules
 3. Submit pull request
 
-[Contributing Guide](docs/guides/CONTRIBUTING.md) • [Issue Tracker](https://github.com/er77/code-graph-rag-mcp/issues)
+[Contributing Guide](docs/guides/CONTRIBUTING.md) • [Issue Tracker](https://github.com/maltejk/code-graph-rag-mcp/issues)
 
 ---
 
@@ -457,4 +458,4 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-**Links**: [GitHub](https://github.com/er77/code-graph-rag-mcp) • [NPM](https://www.npmjs.com/package/@er77/code-graph-rag-mcp) • [MCP Protocol](https://github.com/modelcontextprotocol)
+**Links**: [GitHub](https://github.com/maltejk/code-graph-rag-mcp) • [MCP Protocol](https://github.com/modelcontextprotocol)
