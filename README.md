@@ -86,6 +86,47 @@ codex mcp remove code-graph-rag  # optional cleanup
 codex mcp add code-graph-rag -- node /absolute/path/to/code-graph-rag-mcp/dist/index.js
 ```
 
+### OpenCode CLI Integration
+
+[OpenCode](https://opencode.ai) uses `opencode.jsonc` with `type: "local"`. The server auto-detects the current directory or client roots:
+
+```jsonc
+{
+  "mcpServers": {
+    "code-graph-rag": {
+      "type": "local",
+      "command": ["code-graph-rag-mcp"]
+    }
+  }
+}
+```
+
+**Per-agent tool scoping** — disable globally, then enable per agent:
+
+```jsonc
+{
+  "tools": {
+    "code-graph-rag_*": false
+  },
+  "agents": {
+    "ask": {
+      "tools": ["code-graph-rag_*"]
+    }
+  }
+}
+```
+
+**Environment variables** — set via `env` block in `opencode.jsonc`:
+
+| Variable | Recommended | Notes |
+|----------|-------------|-------|
+| `MCP_EMBEDDING_PROVIDER` | `transformers` | or `openai`, `ollama`, etc. |
+| `MCP_EMBEDDING_ENABLED` | `true` | |
+| `MCP_SEMANTIC_WARMUP_LIMIT` | `0` | Avoid first-call timeout |
+| `MCP_TIMEOUT` | `80000` | OpenCode honors this (unlike Claude Code CLI) |
+
+Unlike Claude Code CLI, OpenCode respects `MCP_TIMEOUT`, so the default embedding warmup works without client-side timeouts.
+
 **Multi-codebase support**: Analyze multiple projects simultaneously → [Multi-Codebase Setup Guide](docs/guides/MULTI_CODEBASE_SETUP.md)
 
 ### Installation Guide (All Clients)
@@ -195,8 +236,15 @@ get_agent_metrics
 get_bus_stats
 clear_bus_topic --args '{"topic": "semantic:search"}'
 
-# One-shot index from the CLI (debug mode)
-node dist/index.js /home/er77/tt '{"jsonrpc":"2.0","id":"index-1","method":"tools/call","params":{"name":"index","arguments":{"directory":"/home/er77/tt","incremental":false,"fullScan":true,"reset":true}}}'
+# One-shot index from the CLI (debug mode) — pass JSON-RPC payloads as args
+#   Directory omitted = uses current directory
+code-graph-rag-mcp '{"id":1,"method":"tools/call","params":{"name":"index","arguments":{"reset":true}}}'
+
+#   Directory as positional arg first, then JSON payload(s)
+code-graph-rag-mcp /path/to/project '{"id":1,"method":"tools/call","params":{"name":"index","arguments":{"reset":true}}}'
+
+#   Multiple requests are processed sequentially
+code-graph-rag-mcp '{"id":1,"method":"tools/call","params":{"name":"reset_graph","arguments":{}}}' '{"id":2,"method":"tools/call","params":{"name":"index","arguments":{"reset":true}}}'
 
 # Relationships for an entity name
 list_entity_relationships (entityName: "YourEntity", relationshipTypes: ["imports"]) 
@@ -260,12 +308,19 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
   Then start the server again to trigger a clean rebuild.
 
 - **Running a one-shot index from the CLI**  
-  You can trigger tools directly by passing JSON-RPC payloads. When a payload is supplied, the server skips the semantic agent and uses low-memory batching for debugging. Example:
+  You can trigger tools directly by passing JSON-RPC payloads as positional arguments. The server starts, executes each request, prints results to stdout, and exits. When a payload is supplied, the server skips the semantic agent by default and uses low-memory batching for debugging.
   ```bash
-  node dist/index.js /path/to/project \
-    '{"jsonrpc":"2.0","id":"index-1","method":"tools/call","params":{"name":"index","arguments":{"directory":"/path/to/project","incremental":false,"fullScan":true,"reset":true}}}'
+  # Index current directory (fast, no semantic embeddings)
+  code-graph-rag-mcp '{"id":1,"method":"tools/call","params":{"name":"index","arguments":{"reset":true}}}'
+
+  # Index a specific project (optionally with full scan)
+  code-graph-rag-mcp /my/project '{"id":1,"method":"tools/call","params":{"name":"index","arguments":{"reset":true,"fullScan":true}}}'
+
+  # Multi-step: reset then index
+  code-graph-rag-mcp '{"id":1,"method":"tools/call","params":{"name":"reset_graph","arguments":{}}}' '{"id":2,"method":"tools/call","params":{"name":"index","arguments":{"reset":true}}}'
   ```
-  The command logs progress to `logs_llm/mcp-server-YYYY-MM-DD.log`. Set `MCP_DEBUG_DISABLE_SEMANTIC=0` if you want embeddings enabled during the run.
+  The first positional argument that does not start with `{` or `[` is treated as the project directory; everything else is a JSON payload. If omitted, the server uses the current directory.  
+  Logs go to `logs_llm/mcp-server-YYYY-MM-DD.log`. Set `MCP_DEBUG_DISABLE_SEMANTIC=0` to enable embeddings during the run.
 
 ---
 
