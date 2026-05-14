@@ -61,7 +61,6 @@ parser:
       - "cpp"
       - "csharp"
       - "java"
-      - "kotlin"
       - "rust"
       - "go"
       - "vba"

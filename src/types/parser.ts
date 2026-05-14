@@ -33,7 +33,6 @@ export const SUPPORTED_LANGUAGES = [
   "rust",
   "go",
   "java",
-  "kotlin",
   "vba",
 ] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];

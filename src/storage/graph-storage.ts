@@ -1032,9 +1032,6 @@ export class GraphStorageImpl implements GraphStorage {
         return "go";
       case "cs":
         return "csharp";
-      case "kt":
-      case "kts":
-        return "kotlin";
       case "vba":
       case "bas":
       case "cls":

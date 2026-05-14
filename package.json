@@ -53,9 +53,6 @@
     "test:verbose": "cross-env NODE_OPTIONS=--experimental-vm-modules node scripts/run-tests.js --verbose",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules node scripts/run-tests.js --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules node scripts/run-tests.js --coverage",
-    "smoke": "node scripts/smoke-graph-health.js /home/er77/_work_fodler/baserow-develop",
-    "smoke:clean": "node scripts/smoke-graph-health.js /home/er77/_work_fodler/baserow-develop --clean",
-    "smoke:semantic": "node scripts/smoke-semantic.js /home/er77/_work_fodler/baserow-develop",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run build",
     "prepare": "simple-git-hooks"
@@ -84,10 +81,10 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.5.0",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "11.10.0",
     "lru-cache": "^10.0.0",
     "nanoid": "^5.0.0",
-    "sqlite-vec": "^0.1.6",
+    "sqlite-vec": "0.1.9",
     "tree-sitter": "0.25.0",
     "tree-sitter-c": "^0.24.1",
     "tree-sitter-c-sharp": "^0.23.5",
@@ -95,7 +92,6 @@
     "tree-sitter-go": "^0.25.0",
     "tree-sitter-java": "0.23.5",
     "tree-sitter-javascript": "^0.25.0",
-    "tree-sitter-kotlin": "^0.3.8",
     "tree-sitter-python": "^0.25.0",
     "tree-sitter-rust": "^0.24.0",
     "tree-sitter-typescript": "0.23.2",
@@ -104,7 +100,9 @@
     "zod-to-json-schema": "^3.23.0"
   },
   "overrides": {
-    "tree-sitter": "0.25.0"
+    "tree-sitter": "0.25.0",
+    "better-sqlite3": "11.10.0",
+    "sqlite-vec": "0.1.9"
   },
   "optionalDependencies": {
     "@xenova/transformers": "^2.17.2"

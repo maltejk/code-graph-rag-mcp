@@ -276,19 +276,7 @@ const DEFAULT_CONFIG: AppConfig = {
   parser: {
     treeSitter: {
       enabled: true,
-      languageConfigs: [
-        "typescript",
-        "javascript",
-        "python",
-        "c",
-        "cpp",
-        "csharp",
-        "java",
-        "rust",
-        "go",
-        "kotlin",
-        "vba",
-      ],
+      languageConfigs: ["typescript", "javascript", "python", "c", "cpp", "csharp", "java", "rust", "go", "vba"],
       maxFileSize: 1048576, // 1MB
       timeout: 5000,
       bufferSize: 1024 * 1024, // 1MB buffer

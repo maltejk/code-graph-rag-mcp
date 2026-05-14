@@ -20,7 +20,6 @@ import { CppAnalyzer } from "./cpp-analyzer.js";
 import { CSharpAnalyzer } from "./csharp-analyzer.js";
 import { GoAnalyzer } from "./go-analyzer.js";
 import { JavaAnalyzer } from "./java-analyzer.js";
-import { KotlinAnalyzer } from "./kotlin-analyzer.js";
 import { MarkdownAnalyzer } from "./markdown-analyzer.js";
 import { createPythonAnalyzer } from "./python-analyzer.js";
 import { RustAnalyzer } from "./rust-analyzer.js";
@@ -78,10 +77,6 @@ const LANGUAGE_LOADERS: Partial<Record<SupportedLanguage, () => Promise<any>>> =
   },
   java: async () => {
     const m: any = requireModule("tree-sitter-java");
-    return m.default ?? m;
-  },
-  kotlin: async () => {
-    const m: any = requireModule("tree-sitter-kotlin");
     return m.default ?? m;
   },
 };
@@ -145,9 +140,6 @@ function detectLanguage(filePath: string): SupportedLanguage {
       return "go";
     case "java":
       return "java";
-    case "kt":
-    case "kts":
-      return "kotlin";
     case "h":
       return filePath.includes("++") || filePath.includes("cpp") || filePath.includes("cxx") ? "cpp" : "c";
     case "hpp":
@@ -188,7 +180,6 @@ export class TreeSitterParser {
   private cppAnalyzer = new CppAnalyzer();
   private goAnalyzer = new GoAnalyzer();
   private javaAnalyzer = new JavaAnalyzer();
-  private kotlinAnalyzer = new KotlinAnalyzer();
   private vbaAnalyzer = new VbaAnalyzer();
   private markdownAnalyzer = new MarkdownAnalyzer();
 
@@ -386,13 +377,6 @@ export class TreeSitterParser {
       relationships = ja.relationships || [];
       console.error(
         `[TreeSitterParser] Java analysis: ${entities.length} entities, ${relationships.length} relationships`,
-      );
-    } else if (language === "kotlin") {
-      const ko = await this.kotlinAnalyzer.analyze(tree.rootNode as any, filePath);
-      entities = ko.entities || [];
-      relationships = ko.relationships || [];
-      console.error(
-        `[TreeSitterParser] Kotlin analysis: ${entities.length} entities, ${relationships.length} relationships`,
       );
     } else {
       // Default parser for JS/TS/etc

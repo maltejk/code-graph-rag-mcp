@@ -59,7 +59,6 @@ parser:
       - "java"
       - "rust"
       - "go"
-      - "kotlin"
       - "vba"
     maxFileSize: 1048576  # 1MB maximum file size for parsing
     timeout: 5000         # 5 seconds timeout for parsing operations
