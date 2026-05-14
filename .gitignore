@@ -186,9 +186,6 @@ vectors.db-wal
 /.github
 /.codex
 /tmp
-/tmp
-/.memory_bank/logs_llm
-/.memory_bank
 /.memory_bank
 data/*
 vectors.db-shm
@@ -205,3 +202,7 @@ vectors.db-shm
 /excel_plugins
 *.md
 !AGENTS.md
+!docs/
+
+# Code Graph RAG data and logs
+.code-graph-rag/

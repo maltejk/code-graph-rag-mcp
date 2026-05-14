@@ -51,7 +51,7 @@ or
       }
 ```
 
-**Manual setup**: Add to Claude Desktop config → [See detailed instructions](docs/guides/CLAUDE_INTEGRATION.md)
+**Manual setup**: Add to Claude Desktop config — see integration examples above
 
 ### Claude Code Integration
 
@@ -135,7 +135,7 @@ codex mcp add code-graph-rag -- node /absolute/path/to/code-graph-rag-mcp/dist/i
 
 Unlike Claude Code CLI, OpenCode respects `MCP_TIMEOUT`, so the default embedding warmup works without client-side timeouts.
 
-**Multi-codebase support**: Analyze multiple projects simultaneously → [Multi-Codebase Setup Guide](docs/guides/MULTI_CODEBASE_SETUP.md)
+**Multi-codebase support**: Analyze multiple projects simultaneously → [Multi-Codebase Setup Guide](docs/MULTI_CODEBASE_SETUP.md)
 
 ---
 
@@ -447,10 +447,10 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
 ## 🤝 **Contributing**
 
 1. Fork the repository
-2. Follow [Agent Governance](docs/AGENTS.md) rules
+2. Follow [Agent Governance](AGENTS.md) rules
 3. Submit pull request
 
-[Contributing Guide](docs/guides/CONTRIBUTING.md) • [Issue Tracker](https://github.com/maltejk/code-graph-rag-mcp/issues)
+[Issue Tracker](https://github.com/maltejk/code-graph-rag-mcp/issues)
 
 ---
 

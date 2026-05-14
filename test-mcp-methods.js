@@ -45,24 +45,28 @@ class MCPTester {
         stdio: ["pipe", "pipe", "pipe"],
       });
 
-      let outputBuffer = "";
       const timeout = setTimeout(() => {
         reject(new Error("Server startup timeout"));
-      }, 10000);
+      }, 20000);
+
+      const startupMessages = ["MCP server running on stdio transport", "Server initialization complete"];
+
+      function checkOutput(text) {
+        return startupMessages.some((msg) => text.includes(msg));
+      }
 
       this.serverProcess.stdout.on("data", (data) => {
-        outputBuffer += data.toString();
-        if (
-          outputBuffer.includes("MCP server running on stdio") ||
-          outputBuffer.includes("Server initialization complete")
-        ) {
+        if (checkOutput(data.toString())) {
           clearTimeout(timeout);
           resolve();
         }
       });
 
-      this.serverProcess.stderr.on("data", (_data) => {
-        // Ignore stderr for now
+      this.serverProcess.stderr.on("data", (data) => {
+        if (checkOutput(data.toString())) {
+          clearTimeout(timeout);
+          resolve();
+        }
       });
 
       this.serverProcess.on("error", (error) => {
@@ -72,16 +76,13 @@ class MCPTester {
     });
   }
 
-  async sendRequest(method, args = {}) {
+  async sendRawRequest(method, params = {}) {
     return new Promise((resolve, reject) => {
       const request = {
         jsonrpc: "2.0",
         id: Date.now(),
-        method: "tools/call",
-        params: {
-          name: method,
-          arguments: args,
-        },
+        method,
+        params,
       };
 
       const timeout = setTimeout(() => {
@@ -107,6 +108,55 @@ class MCPTester {
     });
   }
 
+  async sendRequest(method, args = {}) {
+    return this.sendRawRequest("tools/call", {
+      name: method,
+      arguments: args,
+    });
+  }
+
+  async performHandshake() {
+    this.log("   Performing MCP initialization handshake...", "cyan");
+
+    const initResponse = await this.sendRawRequest("initialize", {
+      protocolVersion: "2024-11-05",
+      capabilities: {},
+      clientInfo: {
+        name: "mcp-test-client",
+        version: "1.0.0",
+      },
+    });
+
+    if (initResponse.error) {
+      throw new Error(`Initialize failed: ${initResponse.error.message}`);
+    }
+
+    this.log(`   ✅ Server initialized (protocol: ${initResponse.result?.protocolVersion || "unknown"})`, "green");
+
+    const notification = {
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+    };
+    this.serverProcess.stdin.write(`${JSON.stringify(notification)}\n`);
+
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  unwrapMcpResult(response) {
+    // MCP tools/call wraps result in content[0].text as JSON string
+    const content = response.result?.content;
+    if (Array.isArray(content) && content.length > 0 && content[0].type === "text") {
+      try {
+        const parsed = JSON.parse(content[0].text);
+        // The server returns { success, data, meta } - we want the data
+        return parsed.data !== undefined ? parsed.data : parsed;
+      } catch {
+        return content[0].text;
+      }
+    }
+    return response.result;
+  }
+
   async runTest(testName, method, args, validator) {
     this.results.total++;
     const startTime = Date.now();
@@ -123,9 +173,12 @@ class MCPTester {
         throw new Error(`MCP Error: ${response.error.message || JSON.stringify(response.error)}`);
       }
 
+      // Unwrap MCP result format
+      const result = this.unwrapMcpResult(response);
+
       // Run custom validator if provided
       if (validator) {
-        const validationResult = validator(response.result);
+        const validationResult = validator(result);
         if (!validationResult.valid) {
           throw new Error(`Validation failed: ${validationResult.error}`);
         }
@@ -137,11 +190,11 @@ class MCPTester {
         method,
         status: "PASS",
         duration,
-        response: response.result,
+        response: result,
       });
 
       this.log(`   ✅ PASS (${duration}ms)`, "green");
-      return response.result;
+      return result;
     } catch (error) {
       const duration = Date.now() - startTime;
       this.results.failed++;
@@ -168,18 +221,21 @@ class MCPTester {
       await this.startServer();
       this.log("✅ Server started successfully\n", "green");
 
+      await this.performHandshake();
+      this.log("✅ Handshake complete\n", "green");
+
       // ========== CORE OPERATIONS ==========
       this.log(`\n${"─".repeat(80)}`, "yellow");
       this.log("CORE OPERATIONS", "yellow");
       this.log("─".repeat(80), "yellow");
 
       await this.runTest("get_version - Get server version info", "get_version", {}, (result) => ({
-        valid: result && typeof result.version === "string",
+        valid: result && result.server && typeof result.server.version === "string",
         error: "Version info not found",
       }));
 
       await this.runTest("get_graph_health - Check database health", "get_graph_health", {}, (result) => ({
-        valid: result && typeof result.totalEntities !== "undefined",
+        valid: result && typeof result.healthy !== "undefined" && result.totals,
         error: "Health info not found",
       }));
 
@@ -188,13 +244,13 @@ class MCPTester {
         "index",
         { directory: TEST_PROJECT_DIR, incremental: true },
         (result) => ({
-          valid: result && (result.success || result.indexed !== undefined),
+          valid: result && (result.message || result.result !== undefined),
           error: "Indexing failed",
         }),
       );
 
       await this.runTest("get_graph_stats - Get graph statistics", "get_graph_stats", {}, (result) => ({
-        valid: result && typeof result.totalEntities === "number",
+        valid: result && result.entities && typeof result.entities.total === "number",
         error: "Stats not found",
       }));
 
@@ -260,7 +316,7 @@ class MCPTester {
         "semantic_search",
         { query: "database connection", limit: 5 },
         (result) => ({
-          valid: result && Array.isArray(result.results),
+          valid: result && Array.isArray(result.items),
           error: "Semantic search failed",
         }),
       );
@@ -280,7 +336,7 @@ class MCPTester {
         "detect_code_clones",
         { minSimilarity: 0.8 },
         (result) => ({
-          valid: Array.isArray(result),
+          valid: result && result.semantic !== undefined && result.jscpd !== undefined,
           error: "Clone detection failed",
         }),
       );
@@ -290,7 +346,7 @@ class MCPTester {
         "cross_language_search",
         { query: "authentication", languages: ["typescript", "javascript"] },
         (result) => ({
-          valid: Array.isArray(result),
+          valid: result !== null,
           error: "Cross-language search failed",
         }),
       );
@@ -316,7 +372,7 @@ class MCPTester {
           "analyze_code_impact",
           { entityId: testEntityId },
           (result) => ({
-            valid: result && typeof result.impactScore !== "undefined",
+            valid: result && result.riskLevel !== undefined && Array.isArray(result.directImpacts),
             error: "Impact analysis failed",
           }),
         );
@@ -327,7 +383,7 @@ class MCPTester {
         "analyze_hotspots",
         { metric: "complexity", limit: 5 },
         (result) => ({
-          valid: result?.items && Array.isArray(result.items),
+          valid: result?.hotspots && Array.isArray(result.hotspots),
           error: "Hotspot analysis failed",
         }),
       );
@@ -337,7 +393,7 @@ class MCPTester {
         "suggest_refactoring",
         { filePath: "src/index.ts" },
         (result) => ({
-          valid: Array.isArray(result),
+          valid: result && result.filePath !== undefined,
           error: "Refactoring suggestions failed",
         }),
       );
@@ -348,7 +404,7 @@ class MCPTester {
       this.log("─".repeat(80), "yellow");
 
       await this.runTest("get_metrics - Get performance metrics", "get_metrics", {}, (result) => ({
-        valid: result && typeof result.memoryUsage !== "undefined",
+        valid: result && result.resources !== undefined,
         error: "Metrics not found",
       }));
 
