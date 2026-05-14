@@ -277,8 +277,8 @@ export class GoAnalyzer {
   /**
    * Extract imports and create relationships
    */
-  private extractImports(node: TreeSitterNode, filePath: string, relationships: EntityRelationship[]): void {
-    const packageId = `${filePath}:package:${this.currentPackage || ""}`;
+  private extractImports(node: TreeSitterNode, _filePath: string, relationships: EntityRelationship[]): void {
+    const packageName = this.currentPackage || "";
 
     // Собираем import_spec на любом уровне (в т.ч. внутри import (...))
     const importSpecs = this.findDescendantsByType(node, "import_spec");
@@ -293,12 +293,13 @@ export class GoAnalyzer {
 
         const aliasNode = spec.childForFieldName("alias") || spec.childForFieldName("name");
         relationships.push({
-          from: packageId,
+          from: packageName,
           to: importPath,
           type: "imports",
           metadata: {
             importType: "package",
             alias: aliasNode?.text,
+            line: spec.startPosition.row + 1,
           },
         });
       }
@@ -308,10 +309,10 @@ export class GoAnalyzer {
       if (importPath && !seen.has(importPath)) {
         seen.add(importPath);
         relationships.push({
-          from: packageId,
+          from: packageName,
           to: importPath,
           type: "imports",
-          metadata: { importType: "package" },
+          metadata: { importType: "package", line: node.startPosition.row + 1 },
         });
       }
     }
@@ -362,7 +363,7 @@ export class GoAnalyzer {
       // Extract function calls within body
       const body = node.childForFieldName("body");
       if (body) {
-        this.extractFunctionCalls(body, entityId, filePath, relationships);
+        this.extractFunctionCalls(body, functionName, filePath, relationships);
       }
     }
   }
@@ -417,11 +418,12 @@ export class GoAnalyzer {
       // Create relationship to receiver type
       if (receiverType) {
         relationships.push({
-          from: methodId,
-          to: `${filePath}:type:${receiverType}`,
+          from: methodName,
+          to: receiverType,
           type: "contains",
           metadata: {
             memberType: "method",
+            line: node.startPosition.row + 1,
           },
         });
       }
@@ -429,7 +431,7 @@ export class GoAnalyzer {
       // Extract function calls within body
       const body = node.childForFieldName("body");
       if (body) {
-        this.extractFunctionCalls(body, methodId, filePath, relationships);
+        this.extractFunctionCalls(body, methodName, filePath, relationships);
       }
     }
   }
@@ -491,17 +493,17 @@ export class GoAnalyzer {
 
         // Extract struct fields
         if (typeNode.type === "struct_type") {
-          this.extractStructFields(typeNode, typeId, filePath, entities, relationships);
+          this.extractStructFields(typeNode, typeName, filePath, entities, relationships);
         }
 
         // Extract interface methods
         if (typeNode.type === "interface_type") {
-          this.extractInterfaceMethods(typeNode, typeId, filePath, entities, relationships);
+          this.extractInterfaceMethods(typeNode, typeName, filePath, entities, relationships);
         }
 
         // Handle type embedding
         if (typeNode.type === "struct_type") {
-          this.extractEmbeddedTypes(typeNode, typeId, filePath, relationships);
+          this.extractEmbeddedTypes(typeNode, typeName, filePath, relationships);
         }
       }
     }
@@ -526,11 +528,12 @@ export class GoAnalyzer {
    */
   private extractStructFields(
     structNode: TreeSitterNode,
-    structId: string,
+    typeName: string,
     filePath: string,
     entities: ParsedEntity[],
     relationships: EntityRelationship[],
   ): void {
+    const structId = `${filePath}:type:${typeName}`;
     const fieldList = structNode.namedChildren.filter((c) => c.type === "field_declaration_list");
 
     for (const list of fieldList) {
@@ -560,11 +563,12 @@ export class GoAnalyzer {
 
           // Create relationship
           relationships.push({
-            from: fieldId,
-            to: structId,
+            from: fieldName,
+            to: typeName,
             type: "contains",
             metadata: {
               memberType: "field",
+              line: field.startPosition.row + 1,
             },
           });
         }
@@ -577,11 +581,12 @@ export class GoAnalyzer {
    */
   private extractInterfaceMethods(
     interfaceNode: TreeSitterNode,
-    interfaceId: string,
+    interfaceName: string,
     filePath: string,
     entities: ParsedEntity[],
     relationships: EntityRelationship[],
   ): void {
+    const interfaceId = `${filePath}:type:${interfaceName}`;
     const methodSpecs = interfaceNode.namedChildren.filter((c) => c.type === "method_spec");
 
     for (const methodSpec of methodSpecs) {
@@ -620,11 +625,12 @@ export class GoAnalyzer {
 
         // Create relationship
         relationships.push({
-          from: methodId,
-          to: interfaceId,
+          from: methodName,
+          to: interfaceName,
           type: "contains",
           metadata: {
             memberType: "method",
+            line: methodSpec.startPosition.row + 1,
           },
         });
       }
@@ -636,8 +642,8 @@ export class GoAnalyzer {
    */
   private extractEmbeddedTypes(
     structNode: TreeSitterNode,
-    structId: string,
-    filePath: string,
+    typeName: string,
+    _filePath: string,
     relationships: EntityRelationship[],
   ): void {
     const fieldList = structNode.namedChildren.filter((c) => c.type === "field_declaration_list");
@@ -655,11 +661,12 @@ export class GoAnalyzer {
           const embeddedType = typeNode.text;
           if (embeddedType) {
             relationships.push({
-              from: structId,
-              to: `${filePath}:type:${embeddedType}`,
+              from: typeName,
+              to: embeddedType,
               type: "contains",
               metadata: {
                 embeddingType: "struct",
+                line: field.startPosition.row + 1,
               },
             });
           }
@@ -779,7 +786,7 @@ export class GoAnalyzer {
    */
   private extractFunctionCalls(
     node: TreeSitterNode,
-    callerId: string,
+    callerName: string,
     filePath: string,
     relationships: EntityRelationship[],
   ): void {
@@ -793,11 +800,12 @@ export class GoAnalyzer {
           const functionName = functionNode.text;
           if (functionName) {
             relationships.push({
-              from: callerId,
-              to: `${filePath}:function:${functionName}`,
+              from: callerName,
+              to: functionName,
               type: "calls",
               metadata: {
                 callType: "function",
+                line: node.startPosition.row + 1,
               },
             });
           }
@@ -808,7 +816,7 @@ export class GoAnalyzer {
       for (let i = 0; i < node.childCount; i++) {
         const child = node.child(i);
         if (child) {
-          this.extractFunctionCalls(child, callerId, filePath, relationships);
+          this.extractFunctionCalls(child, callerName, filePath, relationships);
         }
       }
     } finally {

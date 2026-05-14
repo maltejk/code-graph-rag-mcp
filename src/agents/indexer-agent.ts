@@ -345,21 +345,29 @@ export class IndexerAgent extends BaseAgent {
 
       function resolveByNameAndLine(name: string, line?: number): string | undefined {
         const candidates = byName.get(name);
-        if (!candidates || candidates.length === 0) return undefined;
+        if (candidates && candidates.length > 0) {
+          if (line == null) return candidates[0]?.id;
 
-        if (line == null) return candidates[0]?.id;
+          let best: Entity | undefined;
+          let bestDelta = Infinity;
 
-        let best: Entity | undefined;
-        let bestDelta = Infinity;
+          for (const c of candidates) {
+            const d = Math.abs((c.location?.start?.line ?? 0) - line);
+            if (d < bestDelta) {
+              best = c;
+              bestDelta = d;
+            }
+          }
+          return best?.id;
+        }
 
-        for (const c of candidates) {
-          const d = Math.abs((c.location?.start?.line ?? 0) - line);
-          if (d < bestDelta) {
-            best = c;
-            bestDelta = d;
+        // Fallback: try matching against entity IDs directly
+        for (const entities of byName.values()) {
+          for (const e of entities) {
+            if (e.id === name) return e.id;
           }
         }
-        return best?.id;
+        return undefined;
       }
       const normalizeRelationshipType = (raw: string): RelationType | null => {
         switch (raw) {
