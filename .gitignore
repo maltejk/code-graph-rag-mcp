@@ -175,7 +175,6 @@ dist
 .DS_Store
 CLAUDE.md
 /.claude
-/logs_llm
 vec0.so
 vectors.db
 vectors.db-shm

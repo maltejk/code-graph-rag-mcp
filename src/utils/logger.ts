@@ -2,7 +2,7 @@
  * Rotated Debug Logger for MCP Server Activity
  *
  * Provides comprehensive logging with rotation for all MCP server activities
- * Stores logs in logs_llm folder with automatic rotation based on size and time
+ * Stores logs in .code-graph-rag folder with automatic rotation based on size and time
  */
 
 import { existsSync, mkdirSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";

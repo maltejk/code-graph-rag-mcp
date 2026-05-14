@@ -321,7 +321,7 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
   code-graph-rag-mcp '{"id":1,"method":"tools/call","params":{"name":"reset_graph","arguments":{}}}' '{"id":2,"method":"tools/call","params":{"name":"index","arguments":{"reset":true}}}'
   ```
   The first positional argument that does not start with `{` or `[` is treated as the project directory; everything else is a JSON payload. If omitted, the server uses the current directory.  
-  Logs go to `logs_llm/mcp-server-YYYY-MM-DD.log`. Set `MCP_DEBUG_DISABLE_SEMANTIC=0` to enable embeddings during the run.
+  Logs go to `.code-graph-rag/mcp-server-YYYY-MM-DD.log`. Set `MCP_DEBUG_DISABLE_SEMANTIC=0` to enable embeddings during the run.
 
 ---
 
@@ -348,7 +348,7 @@ export MCP_SEMANTIC_WARMUP_LIMIT=25
 
 - ✅ TTY-safe stdio: redirect console stdout logs → `stderr` during MCP runs (prevents handshake breaks)
 - 🗂️ Global log mirror: always write a copy to `/tmp/code-graph-rag-mcp/mcp-server-YYYY-MM-DD.log` for early-start debugging
-- 🛡️ Resilient logging: if `logs_llm/` can’t be created, fall back to `os.tmpdir()` instead of exiting before `initialize`
+- 🛡️ Resilient logging: if `.code-graph-rag/` can’t be created, fall back to `os.tmpdir()` instead of exiting before `initialize`
 
 ### 🚀 Version 2.7.7 (2025-12-14) - **Codex StdIO Hardening + Kotlin**
 
