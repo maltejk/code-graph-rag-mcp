@@ -32,6 +32,12 @@ export default defineConfig({
     "tree-sitter-rust",
     "tree-sitter-go",
     "tree-sitter-java",
+
+    // Optional/transformers — bundled inline they drag in onnxruntime-node
+    // which Node.js 24+ tries to resolve statically at startup even when the
+    // transformers provider is never used. Dynamic import() handles absence.
+    "@xenova/transformers",
+    "onnxruntime-node",
   ],
 
   // Type generation
